@@ -968,8 +968,14 @@ void Client::GoToBind(uint8 bind_number) {
 		);
 }
 
-void Client::GoToDeath() {
-	MovePC(m_pp.binds[0].zone_id, m_pp.binds[0].instance_id, 0.0f, 0.0f, 0.0f, 0.0f, 1, ZoneToBindPoint);
+void Client::GoToDeath(bool sac) {
+	if (sac)
+		MovePC(m_pp.binds[0].zone_id, m_pp.binds[0].instance_id, 0.0f, 0.0f, 0.0f, 0.0f, 1, ZoneToBindPoint);
+	else
+	{
+		// hardcore death
+		MovePC(729, -31.0f, 81.0f, 9.0f, 0.0f, 1, ZoneSolicited);
+	}
 }
 
 void Client::ClearZoneFlag(uint32 zone_id) {

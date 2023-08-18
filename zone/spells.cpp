@@ -4354,7 +4354,9 @@ void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 {
 	LogSpells("Corpse::CastRezz spellid [{}], Rezzed() is [{}], rezzexp is [{}]", spellid,IsRezzed(),rez_experience);
 
-	if(IsRezzed()){
+	// 
+	// if(IsRezzed()){
+	if (false) {
 		if(Caster && Caster->IsClient())
 			Caster->Message(Chat::Red,"This character has already been resurrected.");
 
@@ -4384,7 +4386,8 @@ void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 	rezz->unknown020 = 0x00000000;
 	rezz->unknown088 = 0x00000000;
 	// We send this to world, because it needs to go to the player who may not be in this zone.
-	worldserver.RezzPlayer(outapp, rez_experience, corpse_db_id, OP_RezzRequest);
+	// worldserver.RezzPlayer(outapp, rez_experience, corpse_db_id, OP_RezzRequest);
+	worldserver.RezzPlayer(outapp, 0, corpse_db_id, OP_RezzRequest);
 	safe_delete(outapp);
 }
 

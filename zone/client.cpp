@@ -3798,8 +3798,8 @@ void Client::SacrificeConfirm(Client *caster)
 //Essentially a special case death function
 void Client::Sacrifice(Client *caster)
 {
-	if (GetLevel() >= RuleI(Spells, SacrificeMinLevel) && GetLevel() <= RuleI(Spells, SacrificeMaxLevel)) {
-		int exploss = (int)(GetLevel() * (GetLevel() / 18.0) * 12000);
+	if (GetLevel() >= RuleI(Spells, SacrificeMinLevel) && GetLevel() <= RuleI(Spells, SacrificeMaxLevel) && GetHP() == GetMaxHP()) {
+		uint32 exploss = (uint32)(GetLevel() * (GetLevel() / 18.0) * 12000);
 		if (exploss < GetEXP()) {
 			SetEXP(GetEXP() - exploss, GetAAXP());
 			SendLogoutPackets();
@@ -3836,14 +3836,15 @@ void Client::Sacrifice(Client *caster)
 				r->MemberZoned(this);
 			}
 			ClearAllProximities();
-			if (RuleB(Character, LeaveCorpses)) {
+			// sac leave a corpse
+			/*if (RuleB(Character, LeaveCorpses)) {
 				auto new_corpse = new Corpse(this, 0);
 				entity_list.AddCorpse(new_corpse, GetID());
 				SetID(0);
 				entity_list.QueueClients(this, &app2, true);
-			}
+			}*/
 			Save();
-			GoToDeath();
+			GoToDeath(true);
 			if (caster) // I guess it's possible?
 				caster->SummonItem(RuleI(Spells, SacrificeItemID));
 		}

@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
+#include <chrono>
 
 #ifdef USE_SFMT19937
 // only GCC supports, so lets turn it off
@@ -58,7 +59,11 @@ namespace EQ {
 #ifdef BIASED_INT_DIST
 			return low + m_gen() % (high - low + 1);
 #else
-			return int_dist(m_gen, int_param_t(low, high)); // [low, high]
+			//old
+			//return int_dist(m_gen, int_param_t(low, high)); // [low, high]
+			auto currentTime = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+
+			return int(low + (73 + 31 * currentTime.time_since_epoch().count()) % (high - low + 1));
 #endif
 		}
 

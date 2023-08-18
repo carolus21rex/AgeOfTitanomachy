@@ -1857,6 +1857,9 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				}
 			}
 		}
+		if (killerMob->IsClient()) {
+			Message(Chat::Broadcasts, "%s has been slain by %s in %s", GetName(), killerMob->GetName(), GetZone(GetZoneID())->long_name);
+		}
 	}
 
 	entity_list.RemoveFromTargets(this, true);
@@ -1878,7 +1881,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 			exp_loss = 3;
 		}
 
-		auto current_exp_loss = exp_losses[exp_loss];
+		auto current_exp_loss = 0.110f;
 
 		exploss = static_cast<int>(static_cast<float>(GetEXP()) * current_exp_loss); //loose % of total XP pending rule (choose 0-10)
 	}
@@ -1895,6 +1898,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 		// granting a bonus.
 		exploss *= zone->level_exp_mod[GetLevel()].ExpMod;
 	}
+
 
 	if (exploss > 0 && RuleB(Character, DeathKeepLevel)) {
 		int32 total_exp = GetEXP();
@@ -1932,6 +1936,9 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 
 	// now we apply the exp loss, unmem their spells, and make a corpse
 	// unless they're a GM (or less than lvl 10
+
+	exploss = GetEXPForLevel(GetLevel()) - GetEXPForLevel(GetLevel() - 1);
+
 	if (!GetGM()) {
 		if (exploss > 0) {
 			int32 newexp = GetEXP();
@@ -1939,7 +1946,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				//lost more than we have... wtf..
 				newexp = 1;
 			} else {
-				newexp -= exploss;
+				newexp -= 0.125f * exploss;
 			}
 			SetEXP(newexp, GetAAXP());
 			//m_epp.perAA = 0;	//reset to no AA exp on death.
@@ -1951,19 +1958,17 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 		if (RuleB(Spells, BuffsFadeOnDeath)) {
 			BuffFadeNonPersistDeath();
 		}
+		UnmemSpellAll(true);
 
-		if (RuleB(Character, UnmemSpellsOnDeath)) {
+		/*	if (RuleB(Character, UnmemSpellsOnDeath)) {
 			if ((ClientVersionBit() & EQ::versions::maskSoFAndLater) && RuleB(Character, RespawnFromHover)) {
 				UnmemSpellAll(true);
 			} else {
 				UnmemSpellAll(false);
 			}
-		}
+		}*/
 
-		if (
-			(RuleB(Character, LeaveCorpses) && GetLevel() >= RuleI(Character, DeathItemLossLevel)) ||
-			RuleB(Character, LeaveNakedCorpses)
-		) {
+		
 			// creating the corpse takes the cash/items off the player too
 			new_corpse = new Corpse(this, exploss);
 
@@ -1972,6 +1977,10 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 			if (tmp[0] == '1' && tmp[1] == '\0' && killerMob && killerMob->IsClient()) {
 				database.GetVariable("PvPreward", tmp);
 				auto reward = Strings::ToInt(tmp);
+
+				//pvpReward
+				reward = 3;
+
 				if (reward == 3) {
 					database.GetVariable("PvPitem", tmp);
 					auto pvp_item_id = Strings::ToInt(tmp);
@@ -2006,7 +2015,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 			entity_list.QueueClients(this, &app2, true);
 			ApplyIllusionToCorpse(illusion_spell_id, new_corpse);
 			leave_corpse = true;
-		}
+		
 	} else {
 		BuffFadeDetrimental();
 	}
@@ -2049,11 +2058,13 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 		}
 
 		dead_timer.Start(5000, true);
-		m_pp.zone_id = m_pp.binds[0].zone_id;
-		m_pp.zoneInstance = m_pp.binds[0].instance_id;
+		//m_pp.zone_id = m_pp.binds[0].zone_id;
+		m_pp.zone_id = 729;
+		m_pp.zoneInstance = 0;
+		// goto bind?
 		database.MoveCharacterToZone(CharacterID(), m_pp.zone_id);
 		Save();
-		GoToDeath();
+		GoToDeath(false);
 	}
 
 	/* QS: PlayerLogDeaths */
@@ -4179,7 +4190,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 		}
 
 		//send an HP update if we are hurt
-		if (GetHP() < GetMaxHP())
+		if (!IsClient() && GetHP() < GetMaxHP())
 			SendHPUpdate(); // the OP_Damage actually updates the client in these cases, so we skip the HP update for them
 	}	//end `if damage was done`
 
@@ -4399,6 +4410,11 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 			);
 		}
 	}
+
+	//get rid of the damn double hit on clients
+	if (IsClient() && GetHP() < GetMaxHP())
+		SendHPUpdate(); // the OP_Damage actually updates the client in these cases, so we skip the HP update for them
+
 }
 
 void Mob::HealDamage(uint64 amount, Mob* caster, uint16 spell_id)

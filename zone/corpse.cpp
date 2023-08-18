@@ -282,7 +282,7 @@ Corpse::Corpse(
 	loot_request_type = LootRequestType::Forbidden;
 }
 
-Corpse::Corpse(Client* client, int32 in_rezexp) : Mob (
+Corpse::Corpse(Client* client, int32 in_rezexp) : Mob(
 	"Unnamed_Corpse", // in_name
 	"", // in_lastname
 	0, // in_cur_hp
@@ -340,6 +340,7 @@ Corpse::Corpse(Client* client, int32 in_rezexp) : Mob (
 	0, // in_heroic_strikethrough
 	false // in_keeps_sold_items
 ),
+	//corpse decay
 	corpse_decay_timer(RuleI(Character, CorpseDecayTimeMS)),
 	corpse_rez_timer(RuleI(Character, CorpseResTimeMS)),
 	corpse_delay_timer(RuleI(NPC, CorpseUnlockTimer)),
